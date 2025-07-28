@@ -8,6 +8,8 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- JSBarcode CDN -->
     <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
+    <!-- html2pdf.js CDN (includes html2canvas and jsPDF) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- Google Fonts - IBM Plex Sans, Montserrat, Roboto, Open Sans, Lato, Oswald, Source Sans Pro, Merriweather, Playfair Display, PT Sans -->
     <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;700&family=Montserrat:wght@400;700&family=Roboto:wght@400;700&family=Open+Sans:wght@400;700&family=Lato:wght@400;700&family=Oswald:wght@400;700&family=Source+Sans+Pro:wght@400;700&family=Merriweather:serif&family=Playfair+Display:serif&family=PT+Sans:wght@400;700&display=swap" rel="stylesheet">
     <style>
@@ -39,7 +41,7 @@
             font-size: 1px; /* Base font-size, JS will control actual sizes */
             box-sizing: border-box;
             word-wrap: break-word; /* Ensure long text wraps */
-            overflow: hidden; /* Ensure content stays within its bounds */
+            /* overflow: hidden; Removed as padding handles space, and it can hide debugging info */
             /* Width and height will be set by JS dynamically */
         }
         /* Style for the barcode image container */
@@ -107,6 +109,11 @@
         button:active {
             background-color: #1d4ed8;
             transform: translateY(0);
+        }
+        button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
         }
         label {
             font-weight: 500;
@@ -226,6 +233,10 @@
                                 <option value="900">900</option>
                             </select>
                         </div>
+                        <div class="flex-1">
+                            <label for="companyNameCalculatedFontSize">Calculated Size (px):</label>
+                            <input type="number" id="companyNameCalculatedFontSize" class="rounded-lg" readonly>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -278,6 +289,10 @@
                                 <option value="900">900</option>
                             </select>
                         </div>
+                        <div class="flex-1">
+                            <label for="productNameCalculatedFontSize">Calculated Size (px):</label>
+                            <input type="number" id="productNameCalculatedFontSize" class="rounded-lg" readonly>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -311,6 +326,17 @@
                         <option value="BRL">Brazilian Real (R$)</option>
                         <option value="ZAR">South African Rand (R)</option>
                     </select>
+                </div>
+            </div>
+            <!-- New "Set" checkbox and Pcs/Set input -->
+            <div class="flex gap-4 items-center">
+                <div class="checkbox-container">
+                    <input type="checkbox" id="setCheckbox" class="form-checkbox h-5 w-5 text-blue-600 rounded">
+                    <label for="setCheckbox" class="ml-2 text-gray-700">Set</label>
+                </div>
+                <div class="flex-1">
+                    <label for="pcsPerSetInput">Number of Pcs/Set:</label>
+                    <input type="number" id="pcsPerSetInput" min="1" step="1" placeholder="e.g., 1" class="rounded-lg" disabled>
                 </div>
             </div>
             <div class="font-controls">
@@ -357,6 +383,10 @@
                             <option value="800">800</option>
                             <option value="900">900</option>
                         </select>
+                    </div>
+                    <div class="flex-1">
+                        <label for="mrpCalculatedFontSize">Calculated Size (px):</label>
+                        <input type="number" id="mrpCalculatedFontSize" class="rounded-lg" readonly>
                     </div>
                 </div>
             </div>
@@ -414,6 +444,10 @@
                                 <option value="900">900</option>
                             </select>
                         </div>
+                        <div class="flex-1">
+                            <label for="companyAddressCalculatedFontSize">Calculated Size (px):</label>
+                            <input type="number" id="companyAddressCalculatedFontSize" class="rounded-lg" readonly>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -465,6 +499,10 @@
                                 <option value="800">800</option>
                                 <option value="900">900</option>
                             </select>
+                        </div>
+                        <div class="flex-1">
+                            <label for="mfgDateCalculatedFontSize">Calculated Size (px):</label>
+                            <input type="number" id="mfgDateCalculatedFontSize" class="rounded-lg" readonly>
                         </div>
                     </div>
                 </div>
@@ -522,6 +560,10 @@
                                 <option value="800">800</option>
                                 <option value="900">900</option>
                             </select>
+                        </div>
+                        <div class="flex-1">
+                            <label for="manufacturerAddressCalculatedFontSize">Calculated Size (px):</label>
+                            <input type="number" id="manufacturerAddressCalculatedFontSize" class="rounded-lg" readonly>
                         </div>
                     </div>
                 </div>
@@ -593,6 +635,10 @@
                                 <option value="900">900</option>
                             </select>
                         </div>
+                        <div class="flex-1">
+                            <label for="barcodeNumberCalculatedFontSize">Calculated Size (px):</label>
+                            <input type="number" id="barcodeNumberCalculatedFontSize" class="rounded-lg" readonly>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -644,7 +690,14 @@
             <div>
                 <label for="contentPaddingInput">Border Margin (px):</label>
                 <input type="number" id="contentPaddingInput" value="0" min="0" step="1" placeholder="0" class="rounded-lg">
-                <p class="text-sm text-gray-500 mt-1">Internal padding between border and content. Ignored if no border.</p>
+                <p class="text-sm text-gray-500 mt-1">Margin from sticker edge to border. Acts as outer padding if no border.</p>
+            </div>
+
+            <!-- New Text Margin Input -->
+            <div>
+                <label for="textMarginInput">Text Margin (px):</label>
+                <input type="number" id="textMarginInput" value="0" min="0" step="1" placeholder="0" class="rounded-lg">
+                <p class="text-sm text-gray-500 mt-1">Margin between border and content. Acts as inner padding.</p>
             </div>
 
             <!-- New input for Corner Fillet Radius -->
@@ -661,7 +714,7 @@
             </div>
 
             <button id="generateStickerBtn" class="w-full mt-6 rounded-lg">Generate Sticker</button>
-            <button id="printStickerBtn" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 rounded-lg">Print Stickers</button>
+            <button id="printStickerBtn" class="w-full mt-4 bg-blue-600 hover:bg-blue-700 rounded-lg" disabled>Print Stickers</button>
         </div>
 
         <div class="flex-1 flex flex-col items-center justify-center p-4 bg-gray-50 rounded-lg border border-dashed border-gray-300">
@@ -710,31 +763,48 @@
 
             // New UI elements
             const cornerFilletRadiusInput = document.getElementById('cornerFilletRadius'); 
-            const contentPaddingInput = document.getElementById('contentPaddingInput');
+            const contentPaddingInput = document.getElementById('contentPaddingInput'); // Border Margin
+            const textMarginInput = document.getElementById('textMarginInput'); // New Text Margin
             const borderWeightInput = document.getElementById('borderWeight'); // New border weight input
+            const setCheckbox = document.getElementById('setCheckbox'); // New Set checkbox
+            const pcsPerSetInput = document.getElementById('pcsPerSetInput'); // New Pcs/Set input
+
 
             // Font control elements
             const companyNameFontFamily = document.getElementById('companyNameFontFamily');
             const companyNameFontSize = document.getElementById('companyNameFontSize');
             const companyNameFontWeight = document.getElementById('companyNameFontWeight');
+            const companyNameCalculatedFontSize = document.getElementById('companyNameCalculatedFontSize'); // New
+            
             const productNameFontFamily = document.getElementById('productNameFontFamily');
             const productNameFontSize = document.getElementById('productNameFontSize');
             const productNameFontWeight = document.getElementById('productNameFontWeight');
+            const productNameCalculatedFontSize = document.getElementById('productNameCalculatedFontSize'); // New
+
             const mrpFontFamily = document.getElementById('mrpFontFamily');
             const mrpFontSize = document.getElementById('mrpFontSize');
             const mrpFontWeight = document.getElementById('mrpFontWeight');
+            const mrpCalculatedFontSize = document.getElementById('mrpCalculatedFontSize'); // New
+
             const companyAddressFontFamily = document.getElementById('companyAddressFontFamily');
             const companyAddressFontSize = document.getElementById('companyAddressFontSize');
             const companyAddressFontWeight = document.getElementById('companyAddressFontWeight');
+            const companyAddressCalculatedFontSize = document.getElementById('companyAddressCalculatedFontSize'); // New
+
             const mfgDateFontFamily = document.getElementById('mfgDateFontFamily');
             const mfgDateFontSize = document.getElementById('mfgDateFontSize');
             const mfgDateFontWeight = document.getElementById('mfgDateFontWeight');
+            const mfgDateCalculatedFontSize = document.getElementById('mfgDateCalculatedFontSize'); // New
+
             const manufacturerAddressFontFamily = document.getElementById('manufacturerAddressFontFamily');
             const manufacturerAddressFontSize = document.getElementById('manufacturerAddressFontSize');
             const manufacturerAddressFontWeight = document.getElementById('manufacturerAddressFontWeight');
+            const manufacturerAddressCalculatedFontSize = document.getElementById('manufacturerAddressCalculatedFontSize'); // New
+
             const barcodeNumberFontFamily = document.getElementById('barcodeNumberFontFamily');
             const barcodeNumberFontSize = document.getElementById('barcodeNumberFontSize');
             const barcodeNumberFontWeight = document.getElementById('barcodeNumberFontWeight');
+            const barcodeNumberCalculatedFontSize = document.getElementById('barcodeNumberCalculatedFontSize'); // New
 
             // Helper function to create an address line input (now returns the input element directly)
             const createAddressLineInput = (initialValue = '') => {
@@ -899,9 +969,15 @@
             }
 
             if (contentPaddingInput) {
-                contentPaddingInput.value = "0"; // Default content padding
+                contentPaddingInput.value = "0"; // Default content padding (Border Margin)
             } else {
                 console.error("contentPaddingInput not found!");
+            }
+
+            if (textMarginInput) { // New text margin default
+                textMarginInput.value = "0";
+            } else {
+                console.error("textMarginInput not found!");
             }
 
             if (borderWeightInput) {
@@ -937,6 +1013,18 @@
 
             if (generateStickerBtn) generateStickerBtn.addEventListener('click', generateSticker);
             if (printStickerBtn) printStickerBtn.addEventListener('click', printStickers); 
+
+            // Event listener for "Set" checkbox to enable/disable Pcs/Set input
+            if (setCheckbox) {
+                setCheckbox.addEventListener('change', () => {
+                    if (pcsPerSetInput) {
+                        pcsPerSetInput.disabled = !setCheckbox.checked;
+                        if (!setCheckbox.checked) {
+                            pcsPerSetInput.value = ''; // Clear value when disabled
+                        }
+                    }
+                });
+            }
 
             // Function to add a new company address line input
             if (addCompanyAddressLineBtn) {
@@ -984,10 +1072,12 @@
 
                 const companyName = companyNameInput.value.trim();
                 const productName = productNameInput.value.trim();
-                const mrpValue = mrpValueInput.value.trim();
+                const mrpValue = parseFloat(mrpValueInput.value.trim()); // Parse as float
                 const currency = currencySelect.value;
                 const mfgDate = mfgDateInput.value.trim(); 
-                
+                const isSet = setCheckbox.checked; // Get state of Set checkbox
+                const pcsPerSet = parseInt(pcsPerSetInput.value); // Get Pcs/Set value
+
                 // Get all company address lines
                 const companyAddressLines = Array.from(document.querySelectorAll('.company-address-line')).map(input => input.value.trim());
                 // Get all manufacturer address lines
@@ -1007,7 +1097,8 @@
 
                 // New UI values
                 const cornerFilletRadius = parseFloat(cornerFilletRadiusInput.value) || 0;
-                const borderMarginPx = parseFloat(contentPaddingInput.value); // Renamed for clarity
+                const borderMarginPx = parseFloat(contentPaddingInput.value); // Border Margin
+                const textMarginPx = parseFloat(textMarginInput.value) || 0; // New: Text Margin
                 const borderWeight = parseFloat(borderWeightInput.value) || 0; // Get border weight
 
                 // Get font settings
@@ -1055,10 +1146,10 @@
                 if (!productName) {
                     displayMessage("Product Name is a required field.", 'red'); return;
                 }
-                if (!mrpValue) {
+                if (isNaN(mrpValue)) { // Check if mrpValue is a valid number
                     displayMessage("MRP Value is a required field.", 'red'); return;
                 }
-                if (isNaN(parseFloat(mrpValue)) || parseFloat(mrpValue) < 0) {
+                if (mrpValue < 0) {
                     displayMessage("Please enter a valid non-negative number for MRP Value.", 'red'); return;
                 }
                 if (!currency) {
@@ -1078,6 +1169,14 @@
                 const hasEmptyManufacturerAddressLine = manufacturerAddressLines.some(line => line === '');
                 if (manufacturerAddressLines.length === 0 || hasEmptyManufacturerAddressLine) {
                     displayMessage("Please fill in all manufacturer address lines.", 'red'); return;
+                }
+
+                // Validate Pcs/Set if Set checkbox is checked
+                if (isSet) {
+                    if (isNaN(pcsPerSet) || pcsPerSet <= 0) {
+                        displayMessage("Number of Pcs/Set must be a positive integer when 'Set' is checked.", 'red');
+                        return;
+                    }
                 }
 
                 if (includeBarcode && !barcodeNumber) { // Barcode number only required if barcode is included
@@ -1116,6 +1215,9 @@
                 if (borderMarginPx < 0) {
                     displayMessage("Border Margin (px) must be a non-negative number.", 'red'); return;
                 }
+                if (textMarginPx < 0) { // Validate new text margin
+                    displayMessage("Text Margin (px) must be a non-negative number.", 'red'); return;
+                }
                 if (borderWeight < 0) {
                     displayMessage("Border Weight (px) must be a non-negative number.", 'red'); return;
                 }
@@ -1146,6 +1248,15 @@
                     default: currencySymbol = '';
                 }
 
+                // Calculate MRP display string based on "Set" and "Pcs/Set"
+                let mrpDisplayValue = parseFloat(mrpValue).toFixed(2);
+                let mrpText = `MRP: ${currencySymbol}${mrpDisplayValue}`;
+                if (isSet && pcsPerSet > 0) {
+                    const mrpPerPiece = mrpValue / pcsPerSet;
+                    mrpText += ` (${currencySymbol}${mrpPerPiece.toFixed(2)}/pc)`;
+                }
+
+
                 const stickerWidthPx = stickerWidthCm * cmToPx;
                 const stickerHeightPx = stickerHeightCm * cmToPx;
                 const horizontalGapPx = marginBetweenStickersX * (cmToPx / 10); // Convert mm to px
@@ -1165,13 +1276,10 @@
                 let contentAvailableWidth;
                 let contentAvailableHeight;
 
-                if (includeBorder) {
-                    contentAvailableWidth = Math.max(0, stickerWidthPx - (4 * borderMarginPx));
-                    contentAvailableHeight = Math.max(0, stickerHeightPx - (4 * borderMarginPx));
-                } else {
-                    contentAvailableWidth = Math.max(0, stickerWidthPx - (2 * borderMarginPx));
-                    contentAvailableHeight = Math.max(0, stickerHeightPx - (2 * borderMarginPx));
-                }
+                // New logic for contentAvailableWidth and Height based on border and text margins
+                contentAvailableWidth = Math.max(0, stickerWidthPx - (2 * borderMarginPx) - (includeBorder ? 2 * borderWeight : 0) - (2 * textMarginPx));
+                contentAvailableHeight = Math.max(0, stickerHeightPx - (2 * borderMarginPx) - (includeBorder ? 2 * borderWeight : 0) - (2 * textMarginPx));
+
 
                 console.log('Sticker Inner dimensions (for inner div, including border):');
                 console.log('  stickerInnerWidth:', stickerInnerWidth, 'px');
@@ -1180,6 +1288,7 @@
                 console.log('  contentAvailableWidth:', contentAvailableWidth, 'px');
                 console.log('  contentAvailableHeight:', contentAvailableHeight, 'px');
                 console.log('  Border Margin (from outer edge to border):', borderMarginPx, 'px');
+                console.log('  Text Margin (inside border to content):', textMarginPx, 'px');
                 console.log('  Border Weight:', borderWeight, 'px');
 
                 // --- Helper function to accurately estimate text height and width
@@ -1234,7 +1343,7 @@
                 const textElementContents = {
                     companyName: companyName,
                     productName: productName,
-                    mrpValueOnly: `MRP: ${currencySymbol}${parseFloat(mrpValue).toFixed(2)}`, // Just the MRP value
+                    mrpValueOnly: mrpText, // Use the dynamically generated MRP text
                     incAllTaxesText: "(Inc. all Taxes)", // Just the "Inc. all Taxes" part
                     mfgDate: `MFG DATE: ${(() => {
                         try {
@@ -1552,6 +1661,15 @@
 
                 document.body.removeChild(tempDivForMeasurement);
 
+                // Update the calculated font size display fields
+                companyNameCalculatedFontSize.value = finalRenderProps.companyName.fontSize.toFixed(2);
+                productNameCalculatedFontSize.value = finalRenderProps.productName.fontSize.toFixed(2);
+                mrpCalculatedFontSize.value = finalRenderProps.mrpValueOnly.fontSize.toFixed(2);
+                companyAddressCalculatedFontSize.value = finalRenderProps.companyAddress.fontSize.toFixed(2);
+                mfgDateCalculatedFontSize.value = finalRenderProps.mfgDate.fontSize.toFixed(2);
+                manufacturerAddressCalculatedFontSize.value = finalRenderProps.manufacturerAddress.fontSize.toFixed(2);
+                barcodeNumberCalculatedFontSize.value = finalRenderProps.barcodeNumber.fontSize.toFixed(2);
+
 
                 console.log("Final Calculated Heights & Font Sizes (for rendering):");
                 console.log("  Company Name Height:", measureTextDimensions(textElementContents.companyName, finalRenderProps.companyName.fontSize, contentAvailableWidth, finalRenderProps.companyName.fontFamily, companyNameFont.size > 0).height.toFixed(2), "FontSize:", finalRenderProps.companyName.fontSize.toFixed(2), "Wrap:", finalRenderProps.companyName.whiteSpace);
@@ -1656,6 +1774,7 @@
                         stickerInnerDiv.style.height = `${stickerInnerHeight}px`;
                         stickerInnerDiv.style.border = includeBorder ? `${borderWeight}px solid #d1d5db` : 'none'; // Border applied here with weight
                         stickerInnerDiv.style.borderRadius = includeBorder ? `${cornerFilletRadius}px` : '0'; // Border radius applied here
+                        stickerInnerDiv.style.padding = `${textMarginPx}px`; // Apply text margin as padding to the inner div
 
 
                         let stickerContentHtml = `
@@ -1743,6 +1862,9 @@
                 }
                 displayMessage("Stickers generated successfully!", 'green');
                 console.log("All stickers rendered in preview.");
+
+                // Enable print button after successful generation
+                printStickerBtn.disabled = false;
             }
 
             async function printStickers() { // Made async to await generateSticker if needed
@@ -1796,6 +1918,7 @@
 
                 // Determine final border clearance for print
                 const borderMarginPx = parseFloat(contentPaddingInput.value);
+                const textMarginPx = parseFloat(textMarginInput.value) || 0; // Get text margin for print
 
                 // Calculate the dimensions of the sticker-inner div for print
                 const stickerInnerWidth = Math.max(0, stickerWidthPx - (2 * borderMarginPx));
@@ -1832,11 +1955,17 @@
                         textElement.style.overflow = 'visible'; // Ensure content is not hidden
                         textElement.style.textOverflow = 'clip'; // Prevent ellipsis
                     });
+
+                    // Apply text margin to the inner div for print
+                    const stickerInnerDiv = stickerOuterDiv.querySelector('.sticker-inner');
+                    if (stickerInnerDiv) {
+                        stickerInnerDiv.style.padding = `${textMarginPx}px`;
+                    }
                 });
 
                 // Calculate dimensions for ONE PRINTED PAGE (X stickers horizontally, Y stickers vertically)
-                const pageWidthPx = (stickerWidthPx * totalStickersX) + (horizontalGapPx * (totalStickersX > 0 ? totalStickersX - 1 : 0));
-                const pageHeightPx = (stickerHeightPx * totalStickersY) + (verticalGapPx * (totalStickersY > 0 ? totalStickersY - 1 : 0));
+                const pageWidthPx = (stickerWidthPx * totalStickersX) + (horizontalGapPx * (totalStickersX + 1));
+                const pageHeightPx = (stickerHeightPx * totalStickersY) + (verticalGapPx * (totalStickersY + 1));
 
                 const pxToMm = 25.4 / dpi;
                 // The @page size should NOT include any margins if the user wants no margin
@@ -1857,13 +1986,14 @@
                             }
                             body {
                                 display: flex;
-                                justify-content: flex-end; /* Align content to the end (right) */
+                                justify-content: flex-start; /* Align content to the start (left) */
                                 align-items: flex-start; /* Align content to the start (top) */
                                 background-color: #fff;
                                 box-sizing: border-box; /* Include padding in body's dimensions */
                                 /* Explicitly set body dimensions to match the content area for one logical page */
                                 width: ${pageWidthPx}px; /* Set body width to match content width */
                                 height: ${pageHeightPx}px; /* Set body height to match content height */
+                                padding: ${verticalGapPx}px ${horizontalGapPx}px; /* Apply outer margins as padding */
                             }
                             #printContainer {
                                 display: flex; /* Using flex for horizontal layout */
@@ -1874,8 +2004,9 @@
                                 overflow: visible; /* Ensure content is not clipped */
                                 margin: 0 !important; /* Ensure no default container margins */
                                 /* Make printContainer fill the body's content area */
-                                width: ${pageWidthPx}px; /* Explicitly set the width of the container to fit X stickers */
-                                height: auto; /* Let height adjust based on content */
+                                width: ${pageWidthPx - (2 * horizontalGapPx)}px; /* Explicitly set the width of the container to fit X stickers */
+                                height: ${pageHeightPx - (2 * verticalGapPx)}px; /* Explicitly set height to fill content area */
+                                align-content: flex-start; /* Align rows to the start */
                             }
                             .sticker-outer {
                                 background-color: #fff;
@@ -1902,12 +2033,13 @@
                                 align-items: center;
                                 box-sizing: border-box;
                                 word-wrap: break-word;
-                                overflow: hidden;
+                                /* Removed overflow: hidden; */
                                 /* Inner div gets the border and calculated size */
                                 border: ${stickerBorderCss}; 
                                 border-radius: ${borderRadiusCss};
                                 width: ${stickerInnerWidth}px; /* Use calculated stickerInnerWidth */
                                 height: ${stickerInnerHeight}px; /* Use calculated stickerInnerHeight */
+                                padding: ${textMarginPx}px; /* Apply text margin as padding */
                             }
                             /* Styles for address lines within the sticker preview */
                             .sticker-outer .company-address-line-container,
